@@ -39,9 +39,9 @@ class PositionalEncoding(nn.Module):
     def forward(self, t: torch.Tensor) -> torch.Tensor:
         """
         Args:
-            t: tensor com valores de timestep [batch_size]
+            t: tensor with timestep values [batch_size]
         Returns:
-            Encoding posicional [batch_size, dim]
+            Positional encoding [batch_size, dim]
         """
         device = t.device
         half_dim = self.dim // 2
@@ -75,16 +75,6 @@ class DiffusionModel(nn.Module):
         self.hidden_dim = hidden_dim
         self.num_timesteps = num_timesteps
 
-        # Configure variances for the diffusion process
-        self.betas = torch.linspace(0.0001, 0.02, num_timesteps)
-        self.alphas = 1.0 - self.betas
-        self.alphas_cumprod = torch.cumprod(self.alphas, dim=0)
-        self.alphas_cumprod_prev = torch.cat([torch.ones(1), self.alphas_cumprod[:-1]])
-
-        # Valores pré-calculados
-        self.sqrt_alphas_cumprod = torch.sqrt(self.alphas_cumprod)
-        self.sqrt_one_minus_alphas_cumprod = torch.sqrt(1.0 - self.alphas_cumprod)
-
         # Positional encoding
         self.pos_encoding = PositionalEncoding(hidden_dim)
 
@@ -116,7 +106,7 @@ class DiffusionModel(nn.Module):
         )
 
         self.up1 = nn.Sequential(
-            nn.ConvTranspose2d(hidden_dim, image_channels, 4, stride=2, padding=1),
+            nn.ConvTranspose2d(hidden_dim * 2, image_channels, 4, stride=2, padding=1),
             nn.Tanh(),
         )
 
@@ -149,15 +139,26 @@ class DiffusionModel(nn.Module):
         return output
 
     def register_buffers(self, device: torch.device):
-        """Registrar buffers para o dispositivo correto"""
-        self.register_buffer("betas", self.betas.to(device))
-        self.register_buffer("alphas", self.alphas.to(device))
-        self.register_buffer("alphas_cumprod", self.alphas_cumprod.to(device))
-        self.register_buffer("alphas_cumprod_prev", self.alphas_cumprod_prev.to(device))
-        self.register_buffer("sqrt_alphas_cumprod", self.sqrt_alphas_cumprod.to(device))
+        """Register buffers for the correct device"""
+        # Configure variances for the diffusion process
+        betas = torch.linspace(0.0001, 0.02, self.num_timesteps, device=device)
+        alphas = 1.0 - betas
+        alphas_cumprod = torch.cumprod(alphas, dim=0)
+        alphas_cumprod_prev = torch.cat(
+            [torch.ones(1, device=device), alphas_cumprod[:-1]]
+        )
+
+        # Valores pré-calculados
+        sqrt_alphas_cumprod = torch.sqrt(alphas_cumprod)
+        sqrt_one_minus_alphas_cumprod = torch.sqrt(1.0 - alphas_cumprod)
+
+        self.register_buffer("betas", betas)
+        self.register_buffer("alphas", alphas)
+        self.register_buffer("alphas_cumprod", alphas_cumprod)
+        self.register_buffer("alphas_cumprod_prev", alphas_cumprod_prev)
+        self.register_buffer("sqrt_alphas_cumprod", sqrt_alphas_cumprod)
         self.register_buffer(
-            "sqrt_one_minus_alphas_cumprod",
-            self.sqrt_one_minus_alphas_cumprod.to(device),
+            "sqrt_one_minus_alphas_cumprod", sqrt_one_minus_alphas_cumprod
         )
 
 
@@ -308,7 +309,7 @@ class DiffusionTrainer:
         }
         os.makedirs(os.path.dirname(filepath), exist_ok=True)
         torch.save(checkpoint, filepath)
-        print(f"Checkpoint salvo em: {filepath}")
+        print(f"Checkpoint saved to: {filepath}")
 
     def load_checkpoint(self, filepath: str):
         """Load model weights"""
@@ -316,7 +317,7 @@ class DiffusionTrainer:
         self.model.load_state_dict(checkpoint["model_state_dict"])
         self.optimizer.load_state_dict(checkpoint["optimizer_state_dict"])
         self.losses = checkpoint.get("losses", [])
-        print(f"Checkpoint carregado de: {filepath}")
+        print(f"Checkpoint loaded from: {filepath}")
 
 
 def compute_fid(images: torch.Tensor) -> float:
@@ -333,7 +334,7 @@ def compute_fid(images: torch.Tensor) -> float:
 
     images_np = images.cpu().numpy()
 
-    # Calcular média e variância
+    # Calculate mean and variance
     mean = np.mean(images_np)
     std = np.std(images_np)
 
@@ -373,15 +374,15 @@ def plot_losses(losses: List[float], save_path: Optional[str] = None):
     """Plot loss history"""
     plt.figure(figsize=(10, 5))
     plt.plot(losses, marker="o")
-    plt.xlabel("Época")
-    plt.ylabel("Perda (MSE)")
-    plt.title("Evolução da Perda durante o Treinamento")
+    plt.xlabel("Epoch")
+    plt.ylabel("Loss (MSE)")
+    plt.title("Loss Evolution During Training")
     plt.grid(True)
 
     if save_path:
         os.makedirs(os.path.dirname(save_path), exist_ok=True)
         plt.savefig(save_path, dpi=100, bbox_inches="tight")
-        print(f"Gráfico salvo em: {save_path}")
+        print(f"Chart saved to: {save_path}")
 
     plt.show()
 
@@ -392,14 +393,14 @@ def compare_epochs(
     epochs_to_save: List[int] = [1, 5, 10, 20],
     output_dir: str = "results/epoch_comparisons",
 ):
-    """Comparar resultados entre diferentes épocas"""
+    """Compare results between different epochs"""
     os.makedirs(output_dir, exist_ok=True)
 
     epoch_results = {}
 
     for epoch in epochs_to_save:
         if epoch <= len(trainer.losses):
-            print(f"\nGerando amostras para época {epoch}...")
+            print(f"\nGenerating samples for epoch {epoch}...")
             samples = trainer.sample(num_samples=16)
             fid = compute_fid(samples)
 
@@ -409,7 +410,7 @@ def compare_epochs(
                 "loss": trainer.losses[epoch - 1],
             }
 
-            # Salvar visualização
+            # Save visualization
             viz_path = os.path.join(output_dir, f"samples_epoch_{epoch:03d}.png")
             visualize_samples(
                 samples, title=f"Época {epoch} (FID: {fid:.4f})", save_path=viz_path
@@ -423,69 +424,67 @@ def compare_epochs(
     losses = [epoch_results[e]["loss"] for e in epochs]
 
     ax1.plot(epochs, fids, marker="o", linewidth=2, markersize=8)
-    ax1.set_xlabel("Época")
-    ax1.set_ylabel("FID (Desvio Padrão)")
-    ax1.set_title("Métrica de Qualidade (FID) ao Longo do Treinamento")
+    ax1.set_xlabel("Epoch")
+    ax1.set_ylabel("FID (Standard Deviation)")
+    ax1.set_title("Quality Metric (FID) Throughout Training")
     ax1.grid(True)
 
     ax2.plot(epochs, losses, marker="s", linewidth=2, markersize=8, color="orange")
-    ax2.set_xlabel("Época")
-    ax2.set_ylabel("Perda (MSE)")
-    ax2.set_title("Perda ao Longo do Treinamento")
+    ax2.set_xlabel("Epoch")
+    ax2.set_ylabel("Loss (MSE)")
+    ax2.set_title("Loss Throughout Training")
     ax2.grid(True)
 
     plt.tight_layout()
     comparison_path = os.path.join(output_dir, "metrics_comparison.png")
     plt.savefig(comparison_path, dpi=100, bbox_inches="tight")
-    print(f"Comparação salva em: {comparison_path}")
+    print(f"Comparison saved to: {comparison_path}")
     plt.show()
 
     return epoch_results
 
 
 def main():
-    """Função principal para treinar e testar o modelo"""
-    parser = argparse.ArgumentParser(
-        description="Diffusion Model para Geração de Imagens"
-    )
+    """Main function to train and test the model"""
+    parser = argparse.ArgumentParser(description="Diffusion Model for Image Generation")
     parser.add_argument(
         "--mode",
         type=str,
         choices=["train", "infer"],
         default="train",
-        help="Modo: train para treinar, infer para gerar amostras",
+        help="Mode: train to train, infer to generate samples",
     )
     parser.add_argument(
-        "--epochs", type=int, default=20, help="Número de épocas de treinamento"
+        "--epochs", type=int, default=20, help="Number of training epochs"
     )
-    parser.add_argument("--batch_size", type=int, default=64, help="Tamanho do batch")
+    parser.add_argument("--batch_size", type=int, default=64, help="Batch size")
     parser.add_argument(
-        "--learning_rate", type=float, default=1e-3, help="Taxa de aprendizado"
+        "--learning_rate", type=float, default=1e-3, help="Learning rate"
     )
     parser.add_argument(
         "--checkpoint",
         type=str,
         default="models/diffusion_model.pt",
-        help="Caminho para salvar/carregar checkpoint",
+        help="Path to save/load checkpoint",
     )
     parser.add_argument(
-        "--num_samples", type=int, default=16, help="Número de amostras a gerar"
+        "--num_samples", type=int, default=16, help="Number of samples to generate"
     )
     parser.add_argument(
         "--device",
         type=str,
         choices=["cpu", "cuda"],
         default="cuda" if torch.cuda.is_available() else "cpu",
-        help="Dispositivo (cpu ou cuda)",
+        help="Device (cpu or cuda)",
     )
 
     args = parser.parse_args()
 
     # Configure device
     device = torch.device(args.device)
-    print(f"Usando dispositivo: {device}")
+    print(f"Using device: {device}")
 
-    # Criar dataset
+    # Create dataset
     transform = transforms.Compose(
         [transforms.ToTensor(), transforms.Normalize((0.5,), (0.5,))]
     )
@@ -495,60 +494,60 @@ def main():
     )
     train_loader = DataLoader(train_dataset, batch_size=args.batch_size, shuffle=True)
 
-    # Criar modelo
+    # Create model
     model = DiffusionModel(image_channels=1, hidden_dim=128, num_timesteps=1000)
     trainer = DiffusionTrainer(model, device=device, learning_rate=args.learning_rate)
 
     if args.mode == "train":
         print(f"\n{'='*50}")
-        print("INICIANDO TREINAMENTO")
+        print("STARTING TRAINING")
         print(f"{'='*50}\n")
 
         for epoch in range(1, args.epochs + 1):
             loss = trainer.train_epoch(train_loader)
-            print(f"Época {epoch}/{args.epochs} - Loss: {loss:.6f}")
+            print(f"Epoch {epoch}/{args.epochs} - Loss: {loss:.6f}")
 
-        # Salvar checkpoint
+        # Save checkpoint
         trainer.save_checkpoint(args.checkpoint)
 
-        # Plotar histórico de perda
+        # Plot loss history
         plot_losses(trainer.losses, save_path="results/training_loss.png")
 
-        # Comparar resultados entre épocas
+        # Compare results between epochs
         compare_epochs(trainer, train_loader)
 
-        # Gerar amostras finais
-        print("\nGerando amostras finais...")
+        # Generate final samples
+        print("\nGenerating final samples...")
         final_samples = trainer.sample(num_samples=args.num_samples)
         visualize_samples(
             final_samples,
-            title="Amostras Finais Geradas",
+            title="Final Generated Samples",
             save_path="results/final_samples.png",
         )
 
     elif args.mode == "infer":
         print(f"\n{'='*50}")
-        print("MODO INFERÊNCIA - Gerando Amostras")
+        print("INFERENCE MODE - Generating Samples")
         print(f"{'='*50}\n")
 
         # Carregar checkpoint
         if os.path.exists(args.checkpoint):
             trainer.load_checkpoint(args.checkpoint)
         else:
-            print(f"Aviso: Checkpoint não encontrado em {args.checkpoint}")
-            print("Usando modelo não treinado para demonstração...")
+            print(f"Warning: Checkpoint not found at {args.checkpoint}")
+            print("Using untrained model for demonstration...")
 
-        # Gerar amostras
+        # Generate samples
         samples = trainer.sample(num_samples=args.num_samples)
         visualize_samples(
             samples,
-            title=f"{args.num_samples} Amostras Geradas",
+            title=f"{args.num_samples} Generated Samples",
             save_path=f"results/samples_{args.num_samples}.png",
         )
 
         # Calcular métrica
         fid_score = compute_fid(samples)
-        print(f"\nFID Score (diversidade): {fid_score:.6f}")
+        print(f"\nFID Score (diversity): {fid_score:.6f}")
 
 
 if __name__ == "__main__":

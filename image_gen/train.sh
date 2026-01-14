@@ -7,7 +7,14 @@
 EPOCHS=${EPOCHS:-20}
 BATCH_SIZE=${BATCH_SIZE:-64}
 LEARNING_RATE=${LEARNING_RATE:-0.001}
-DEVICE=${DEVICE:-cuda}
+
+# Check for CUDA availability and set default device
+if python3 -c "import torch; print(torch.cuda.is_available())" 2>/dev/null | grep -q "True"; then
+    DEFAULT_DEVICE="cuda"
+else
+    DEFAULT_DEVICE="cpu"
+fi
+DEVICE=${DEVICE:-$DEFAULT_DEVICE}
 
 # Activate virtual environment
 source ../venv/bin/activate

@@ -1,1 +1,4 @@
 venv/
+audio_gen/models/
+image_gen/data/
+image_gen/models/
