@@ -1,0 +1,52 @@
+Avaliar a capacidade técnica em IA aplicada, domínio de frameworks de deep learning, 
+conhecimento de modelos generativos (GANs e Modelos de Difusão) e boas práticas de 
+engenharia de machine learning.
+Ambiente desejado
+Utilizando Python e Jupyter Notebook, desenvolva um projeto que gere dados a partir 
+do zero usando modelos generativos. O candidato pode escolher livremente a 
+abordagem e o framework a ser utilizado (PyTorch, TensorFlow ou equivalente).
+Parte 1 — Geração de Imagens
+Descrição
+Implemente um modelo generativo capaz de produzir imagens sintéticas a partir de um 
+dataset simples, como o MNIST, utilizando GANs ou Modelos de Difusão.
+Você deve:
+• Implementar um modelo generativo capaz de produzir imagens baseadas em um 
+dataset de sua escolha (ex.: MNIST).
+• Treinar o modelo e gerar amostras, apresentando resultados comparativos entre 
+diferentes épocas de treinamento.
+• Implementar métricas de qualidade (FID, IS ou similar) e apresentar análise visual 
+e numérica dos resultados.
+• Salvar os pesos do modelo e demonstrar o carregamento para inferência.
+• Opcionalmente, incluir uma interface simples (CLI ou web) que permita gerar 
+novas imagens a partir do modelo treinado.
+
+Parte 2 — Regeneração de Áudio com MUSDB
+Objetivo
+Avaliar a capacidade do candidato em aplicar modelos de deep learning a sinais de 
+áudio, demonstrando compreensão de pré-processamento, modelagem generativa e 
+avaliação de qualidade em um domínio diferente de imagens.
+Descrição
+Utilizando o dataset MUSDB18, desenvolva um experimento simples de regeneração 
+de áudio. O objetivo é treinar um modelo capaz de reconstruir ou regenerar um stem 
+de áudio (por exemplo: vocals, drums, bass ou other) a partir de sua representação no 
+domínio do tempo-frequência (ex.: espectrograma ou mel-espectrograma).
+O candidato tem liberdade para escolher a arquitetura do modelo (por exemplo, 
+Autoencoder, VAE, GAN ou Modelo de Difusão), bem como o framework de deep 
+learning.
+Requisitos:
+• Utilizar o dataset MUSDB18 ou uma de suas variantes públicas.
+• Realizar o pré-processamento do áudio (ex.: STFT ou Mel-Spectrogram).
+• Implementar um modelo capaz de regenerar o áudio a partir dessa 
+representação.
+• Treinar o modelo e apresentar exemplos de áudio reconstruído/regenerado.
+• Comparar qualitativamente e quantitativamente o áudio original e o áudio 
+reconstruído.
+• Salvar os pesos do modelo e demonstrar o carregamento para inferência.
+O que deve ser entregue?
+• Código-fonte e notebooks hospedados em repositório público no GitHub.
+• Um arquivo README.md contendo:
+o Descrição do projeto e justificativa das arquiteturas escolhidas.
+o Frameworks e bibliotecas utilizadas.
+o Instruções para rodar o treino e a inferência (imagens e, opcionalmente, 
+áudio).
+o Métricas de avaliação e principais resultados obtidos.
