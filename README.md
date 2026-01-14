@@ -1,60 +1,109 @@
 # ImageAudioGen
 
-Projeto completo de inteligência artificial generativa que implementa dois modelos de deep learning: geração de imagens com Diffusion Models e regeneração de áudio com Autoencoders.
+Complete generative artificial intelligence project that implements two deep learning models: image generation with Diffusion Models and audio regeneration with Autoencoders.
 
-## 📋 Descrição do Projeto
+## Requirements and Environment Setup
 
-Este projeto avalia capacidades técnicas em IA aplicada, demonstrando:
-- Domínio de frameworks de deep learning (PyTorch)
-- Conhecimento de modelos generativos (Diffusion Models e Autoencoders)
-- Boas práticas de engenharia de machine learning
-- Pré-processamento e avaliação de dados
+This project requires Python 3.12 and uses a virtual environment for dependency management.
 
-## 🏗️ Arquitetura do Projeto
+### Prerequisites
+- Python 3.12
+- pip (Python package installer)
+
+### Setup Instructions
+
+1. **Clone the repository** (if not already done):
+   ```bash
+   git clone <repository-url>
+   cd ImageAudioGen
+   ```
+
+2. **Create a virtual environment**:
+   ```bash
+   python3.12 -m venv venv
+   ```
+
+3. **Activate the virtual environment**:
+   - On Linux/Mac:
+     ```bash
+     source venv/bin/activate
+     ```
+   - On Windows:
+     ```bash
+     venv\Scripts\activate
+     ```
+
+4. **Install dependencies**:
+   ```bash
+   pip install -r requirements.txt
+   ```
+
+5. **Verify installation**:
+   ```bash
+   python --version  # Should show Python 3.12.x
+   pip list  # Should show installed packages
+   ```
+
+## Project Description
+
+This project evaluates applied AI technical capabilities, demonstrating:
+- Mastery of deep learning frameworks (PyTorch)
+- Knowledge of generative models (Diffusion Models and Autoencoders)
+- Best practices in machine learning engineering
+- Data preprocessing and evaluation
+
+## Project Architecture
 
 ```
 ImageAudioGen/
-├── image_gen.py        # Geração de imagens com Diffusion Model
-├── audio_gen.py        # Regeneração de áudio com Autoencoder
-├── README.md           # Este arquivo
-└── challenge.txt       # Descrição dos requisitos
+├── image_gen/
+│   ├── image_gen.py        # Image generation with Diffusion Model
+│   ├── train.sh            # Training script for image generation
+│   └── infer.sh            # Inference script for image generation
+├── audio_gen/
+│   ├── audio_gen.py        # Audio regeneration with Autoencoder
+│   ├── train.sh            # Training script for audio regeneration
+│   └── infer.sh            # Inference script for audio regeneration
+├── requirements.txt        # Dependencies for virtual environment
+├── README.md               # This file
+└── challenge.txt           # Requirements description
 ```
 
 ---
 
-## 📸 Parte 1: Geração de Imagens (`image_gen.py`)
+## Part 1: Image Generation (`image_gen/image_gen.py`)
 
-### O que faz?
-Implementa um **Diffusion Model** completo capaz de gerar imagens sintéticas de dígitos manuscritos (MNIST) a partir de ruído Gaussiano aleatório.
+### What it does?
+Implements a complete **Diffusion Model** capable of generating synthetic images of handwritten digits (MNIST) from random Gaussian noise.
 
-### Componentes Principais
+### Main Components
 
 #### 1. **PositionalEncoding**
-- Codifica informação temporal (timesteps) da difusão
-- Usa funções seno/cosseno para criar embeddings posicionais
-- Permite que a rede entenda em qual estágio do processo de difusão está
+- Encodes temporal information (timesteps) of the diffusion
+- Uses sine/cosine functions to create positional embeddings
+- Allows the network to understand at which stage of the diffusion process it is
 
 #### 2. **DiffusionModel (U-Net)**
-- **Entrada**: Imagem com ruído + timestep
-- **Saída**: Predição do ruído Gaussiano adicionado
-- **Arquitetura**: U-Net simplificada com:
-  - Encoder: 2 blocos de convolução + maxpooling (reduz dimensionalidade)
-  - Decoder: 2 blocos de deconvolução (restaura tamanho original)
-  - Skip connections: Concatenam features do encoder com decoder
+- **Input**: Noisy image + timestep
+- **Output**: Prediction of the added Gaussian noise
+- **Architecture**: Simplified U-Net with:
+  - Encoder: 2 convolution blocks + maxpooling (reduces dimensionality)
+  - Decoder: 2 deconvolution blocks (restores original size)
+  - Skip connections: Concatenate encoder and decoder features
 
 #### 3. **DiffusionTrainer**
-- **Forward Diffusion**: Adiciona ruído progressivamente à imagem (1000 timesteps)
-- **Reverse Diffusion**: Remove ruído iterativamente para gerar novas imagens
-- **Perda**: MSE entre ruído predito e ruído real
+- **Forward Diffusion**: Progressively adds noise to the image (1000 timesteps)
+- **Reverse Diffusion**: Iteratively removes noise to generate new images
+- **Loss**: MSE between predicted noise and real noise
 
-#### 4. **Métricas e Avaliação**
-- **FID (Fréchet Inception Distance)**: Mede qualidade/diversidade das imagens geradas
-- Comparação visual entre épocas
-- Histórico de perda de treinamento
+#### 4. **Metrics and Evaluation**
+- **FID (Fréchet Inception Distance)**: Measures quality/diversity of generated images
+- Visual comparison between epochs
+- Training loss history
 
-### Como Usar
+### How to Use
 
-**Treinar o modelo:**
+**Train the model:**
 ```bash
 python image_gen.py --mode train \
     --epochs 20 \
@@ -63,7 +112,7 @@ python image_gen.py --mode train \
     --device cuda
 ```
 
-**Gerar amostras com modelo treinado:**
+**Generate samples with trained model:**
 ```bash
 python image_gen.py --mode infer \
     --num_samples 16 \
@@ -71,92 +120,92 @@ python image_gen.py --mode infer \
     --device cuda
 ```
 
-### Argumentos Disponíveis
+### Available Arguments
 
-| Argumento | Tipo | Padrão | Descrição |
-|-----------|------|--------|-----------|
-| `--mode` | str | train | 'train' para treinar ou 'infer' para gerar |
-| `--epochs` | int | 20 | Número de épocas de treinamento |
-| `--batch_size` | int | 64 | Tamanho do batch |
-| `--learning_rate` | float | 1e-3 | Taxa de aprendizado |
-| `--checkpoint` | str | models/diffusion_model.pt | Caminho do modelo salvo |
-| `--num_samples` | int | 16 | Quantidade de imagens a gerar |
-| `--device` | str | cuda/cpu | CPU ou GPU |
+| Argument          | Type  | Default                   | Description                             |
+| ----------------- | ----- | ------------------------- | --------------------------------------- |
+| `--mode`          | str   | train                     | 'train' to train or 'infer' to generate |
+| `--epochs`        | int   | 20                        | Number of training epochs               |
+| `--batch_size`    | int   | 64                        | Batch size                              |
+| `--learning_rate` | float | 1e-3                      | Learning rate                           |
+| `--checkpoint`    | str   | models/diffusion_model.pt | Saved model path                        |
+| `--num_samples`   | int   | 16                        | Number of images to generate            |
+| `--device`        | str   | cuda/cpu                  | CPU or GPU                              |
 
-### Outputs Gerados
+### Generated Outputs
 
 ```
 results/
-├── training_loss.png           # Gráfico de perda vs época
+├── training_loss.png           # Loss vs epoch graph
 ├── epoch_comparisons/
-│   ├── samples_epoch_001.png   # Amostras na época 1
-│   ├── samples_epoch_005.png   # Amostras na época 5
-│   ├── samples_epoch_010.png   # Amostras na época 10
-│   ├── samples_epoch_020.png   # Amostras na época 20
-│   └── metrics_comparison.png  # FID vs Loss vs Época
-└── final_samples.png           # Amostras finais geradas
+│   ├── samples_epoch_001.png   # Samples at epoch 1
+│   ├── samples_epoch_005.png   # Samples at epoch 5
+│   ├── samples_epoch_010.png   # Samples at epoch 10
+│   ├── samples_epoch_020.png   # Samples at epoch 20
+│   └── metrics_comparison.png  # FID vs Loss vs Epoch
+└── final_samples.png           # Final generated samples
 
 models/
-└── diffusion_model.pt          # Pesos do modelo treinado
+└── diffusion_model.pt          # Trained model weights
 ```
 
-### Resultados Esperados
+### Expected Results
 
-- **Qualidade**: Imagens cada vez melhores conforme aumenta o treinamento
-- **Diversidade**: FID aumenta (maior desvio padrão = mais diversidade)
-- **Perda**: Diminui exponencialmente nas primeiras épocas
+- **Quality**: Images get better as training increases
+- **Diversity**: FID increases (higher standard deviation = more diversity)
+- **Loss**: Decreases exponentially in the first epochs
 
 ---
 
-## 🔊 Parte 2: Regeneração de Áudio (`audio_gen.py`)
+## Part 2: Audio Regeneration (`audio_gen/audio_gen.py`)
 
-### O que faz?
-Implementa um **Autoencoder** para reconstruir stems de áudio a partir de representações no domínio tempo-frequência (Mel-Spectrogram).
+### What it does?
+Implements an **Autoencoder** to reconstruct audio stems from time-frequency domain representations (Mel-Spectrogram).
 
-### Componentes Principais
+### Main Components
 
 #### 1. **AudioPreprocessor**
-- Converte áudio em **Mel-Spectrogram** (análise em frequência)
-- **Mel-Spectrogram**: Representação que imita como o ouvido humano percebe som
-  - Frequências: Representadas em escala logarítmica (Mel)
-  - Eixo Y: 128 Mel bins (padrão)
-  - Eixo X: Frames de tempo
-- Usa **Griffin-Lim** para reconstruir áudio a partir do Mel-Spectrogram
-- Normaliza dados para treinamento
+- Converts audio to **Mel-Spectrogram** (frequency analysis)
+- **Mel-Spectrogram**: Representation that mimics how the human ear perceives sound
+  - Frequencies: Represented in logarithmic scale (Mel)
+  - Y-axis: 128 Mel bins (standard)
+  - X-axis: Time frames
+- Uses **Griffin-Lim** to reconstruct audio from Mel-Spectrogram
+- Normalizes data for training
 
 #### 2. **SyntheticMUSDBDataset**
-- Simula dataset MUSDB18 (um padrão em separação de áudio)
-- Gera áudio sintético com:
-  - Múltiplas frequências harmônicas (440Hz, 880Hz, 1320Hz, 1760Hz)
-  - Amplitudes variáveis
-  - Ruído Gaussiano
-- Redimensiona para tamanho fixo (256 frames temporais)
+- Simulates MUSDB18 dataset (a standard in audio separation)
+- Generates synthetic audio with:
+  - Multiple harmonic frequencies (440Hz, 880Hz, 1320Hz, 1760Hz)
+  - Variable amplitudes
+  - Gaussian noise
+- Resizes to fixed size (256 temporal frames)
 
 #### 3. **AudioAutoencoder**
-- **Entrada**: Mel-Spectrogram [128 mels × 256 timesteps]
-- **Processo**:
-  1. Encoder (4 camadas): Comprime para espaço latente (64 dimensões)
-  2. Bottleneck: Representação comprimida
-  3. Decoder (4 camadas): Reconstrói Mel-Spectrogram original
-- **Saída**: Mel-Spectrogram reconstruído [128 × 256]
+- **Input**: Mel-Spectrogram [128 mels × 256 timesteps]
+- **Process**:
+  1. Encoder (4 layers): Compresses to latent space (64 dimensions)
+  2. Bottleneck: Compressed representation
+  3. Decoder (4 layers): Reconstructs original Mel-Spectrogram
+- **Output**: Reconstructed Mel-Spectrogram [128 × 256]
 
 #### 4. **AudioTrainer**
-- **Função de Perda**: MSE entre Mel-Spectrograms original e reconstruído
-- **Otimizador**: Adam com learning rate scheduler
-- **Gradient Clipping**: Evita explosão de gradientes
+- **Loss Function**: MSE between original and reconstructed Mel-Spectrograms
+- **Optimizer**: Adam with learning rate scheduler
+- **Gradient Clipping**: Prevents gradient explosion
 
-#### 5. **Métricas de Qualidade**
+#### 5. **Quality Metrics**
 
-| Métrica | Descrição | Intervalo |
-|---------|-----------|-----------|
-| **MSE** | Erro quadrático médio pixel a pixel | 0-∞ (menor=melhor) |
-| **MAE** | Erro absoluto médio | 0-∞ (menor=melhor) |
-| **Cosine Similarity** | Similaridade entre espectros | 0-1 (maior=melhor) |
-| **PESQ Proxy** | Aproximação de qualidade perceptual | 0-1 (maior=melhor) |
+| Metric                | Description                       | Range               |
+| --------------------- | --------------------------------- | ------------------- |
+| **MSE**               | Mean squared error pixel by pixel | 0-∞ (lower=better)  |
+| **MAE**               | Mean absolute error               | 0-∞ (lower=better)  |
+| **Cosine Similarity** | Similarity between spectra        | 0-1 (higher=better) |
+| **PESQ Proxy**        | Perceptual quality approximation  | 0-1 (higher=better) |
 
-### Como Usar
+### How to Use
 
-**Treinar o modelo:**
+**Train the model:**
 ```bash
 python audio_gen.py --mode train \
     --epochs 30 \
@@ -168,149 +217,183 @@ python audio_gen.py --mode train \
     --device cuda
 ```
 
-**Reconstruir áudio com modelo treinado:**
+**Reconstruct audio with trained model:**
 ```bash
 python audio_gen.py --mode infer \
     --checkpoint models/audio_autoencoder.pt \
     --device cuda
 ```
 
-### Argumentos Disponíveis
+### Available Arguments
 
-| Argumento | Tipo | Padrão | Descrição |
-|-----------|------|--------|-----------|
-| `--mode` | str | train | 'train' para treinar ou 'infer' para reconstruir |
-| `--epochs` | int | 30 | Número de épocas de treinamento |
-| `--batch_size` | int | 32 | Tamanho do batch |
-| `--learning_rate` | float | 1e-3 | Taxa de aprendizado |
-| `--num_samples` | int | 100 | Quantidade de amostras do dataset |
-| `--checkpoint` | str | models/audio_autoencoder.pt | Caminho do modelo salvo |
-| `--n_mels` | int | 128 | Número de Mel bins |
-| `--latent_dim` | int | 64 | Dimensão do espaço latente |
-| `--device` | str | cuda/cpu | CPU ou GPU |
+| Argument          | Type  | Default                     | Description                                |
+| ----------------- | ----- | --------------------------- | ------------------------------------------ |
+| `--mode`          | str   | train                       | 'train' to train or 'infer' to reconstruct |
+| `--epochs`        | int   | 30                          | Number of training epochs                  |
+| `--batch_size`    | int   | 32                          | Batch size                                 |
+| `--learning_rate` | float | 1e-3                        | Learning rate                              |
+| `--num_samples`   | int   | 100                         | Number of dataset samples                  |
+| `--checkpoint`    | str   | models/audio_autoencoder.pt | Saved model path                           |
+| `--n_mels`        | int   | 128                         | Number of Mel bins                         |
+| `--latent_dim`    | int   | 64                          | Latent space dimension                     |
+| `--device`        | str   | cuda/cpu                    | CPU or GPU                                 |
 
-### Outputs Gerados
+### Generated Outputs
 
 ```
 results/
-├── training_curves.png                # Perda + Métricas vs Época
-├── spectrogram_comparison.png         # Original vs Reconstruído
-├── inference_comparison.png           # Amostras de teste
-├── audio_reconstructed_0.wav          # Áudio reconstruído #0
-└── audio_reconstructed_1.wav          # Áudio reconstruído #1
+├── training_curves.png                # Loss + Metrics vs Epoch
+├── spectrogram_comparison.png         # Original vs Reconstructed
+├── inference_comparison.png           # Test samples
+├── audio_reconstructed_0.wav          # Reconstructed audio #0
+└── audio_reconstructed_1.wav          # Reconstructed audio #1
 
 models/
-└── audio_autoencoder.pt               # Pesos do modelo treinado
+└── audio_autoencoder.pt               # Trained model weights
 ```
 
-### Fluxo de Processamento
+### Processing Flow
 
 ```
-Áudio original (16kHz, 5 segundos)
+Original audio (16kHz, 5 seconds)
          ↓
    Mel-Spectrogram
    [1 × 128 × 256]
          ↓
     ENCODER
-   (4 camadas Conv1d)
+   (4 Conv1d layers)
          ↓
-   Espaço Latente
+   Latent Space
    [1 × 64]
          ↓
     DECODER
-   (4 camadas ConvTranspose1d)
+   (4 ConvTranspose1d layers)
          ↓
-   Mel-Spectrogram Reconstruído
+   Reconstructed Mel-Spectrogram
    [1 × 128 × 256]
          ↓
 Griffin-Lim Inverse
          ↓
-Áudio Reconstruído (16kHz)
+Reconstructed Audio (16kHz)
 ```
 
-### Resultados Esperados
+### Expected Results
 
-- **MSE**: Decresce durante treinamento (começa ~0.5, fim ~0.05)
-- **Similaridade**: Aumenta (começa ~0.5, fim ~0.95)
-- **Qualidade Perceptual**: Áudio reconstruído cada vez mais fiel ao original
+- **MSE**: Decreases during training (starts ~0.5, ends ~0.05)
+- **Similarity**: Increases (starts ~0.5, ends ~0.95)
+- **Perceptual Quality**: Reconstructed audio becomes increasingly faithful to the original
 
 ---
 
-## 🚀 Como Executar
+## How to Run
 
-### Pré-requisitos
+### Prerequisites
 
 ```bash
 pip install torch torchaudio torchvision torchmetrics numpy matplotlib soundfile tqdm
 ```
 
-### Execução Completa (Imagem + Áudio)
+### Complete Execution (Image + Audio)
+
+You can run the models using either the provided shell scripts or direct Python commands:
+
+#### Using Shell Scripts (Recommended)
 
 ```bash
-# Passo 1: Treinar modelo de geração de imagens
-python image_gen.py --mode train --epochs 20 --batch_size 64
+# Step 1: Train image generation model
+cd image_gen && ./train.sh
 
-# Passo 2: Gerar novas imagens
-python image_gen.py --mode infer --num_samples 16
+# Step 2: Generate new images
+cd image_gen && ./infer.sh
 
-# Passo 3: Treinar modelo de regeneração de áudio
-python audio_gen.py --mode train --epochs 30 --batch_size 32
+# Step 3: Train audio regeneration model
+cd audio_gen && ./train.sh
 
-# Passo 4: Reconstruir áudio
-python audio_gen.py --mode infer
+# Step 4: Reconstruct audio
+cd audio_gen && ./infer.sh
+```
+
+#### Using Direct Python Commands
+
+```bash
+# Step 1: Train image generation model
+python image_gen/image_gen.py --mode train --epochs 20 --batch_size 64
+
+# Step 2: Generate new images
+python image_gen/image_gen.py --mode infer --num_samples 16
+
+# Step 3: Train audio regeneration model
+python audio_gen/audio_gen.py --mode train --epochs 30 --batch_size 32
+
+# Step 4: Reconstruct audio
+python audio_gen/audio_gen.py --mode infer
+```
+
+#### Customizing Script Parameters
+
+You can set environment variables to customize the scripts:
+
+```bash
+# For image generation training
+cd image_gen
+EPOCHS=10 BATCH_SIZE=32 ./train.sh
+
+# For audio generation inference
+cd audio_gen
+CHECKPOINT=../models/my_model.pt ./infer.sh
 ```
 
 ---
 
-## 📊 Métricas e Resultados
+## Metrics and Results
 
-### Diffusion Model (Imagens)
-- **Métrica Principal**: FID (Fréchet Inception Distance)
-- **Visualização**: Comparação de amostras entre épocas
-- **Loss**: MSE entre ruído predito e real
+### Diffusion Model (Images)
+- **Main Metric**: FID (Fréchet Inception Distance)
+- **Visualization**: Sample comparison between epochs
+- **Loss**: MSE between predicted and real noise
 
-### Autoencoder (Áudio)
-- **Métricas**: MSE, MAE, Cosine Similarity, PESQ Proxy
-- **Visualização**: Espectrogramas original vs reconstruído
-- **Análise**: Gráficos de convergência
+### Autoencoder (Audio)
+- **Metrics**: MSE, MAE, Cosine Similarity, PESQ Proxy
+- **Visualization**: Original vs reconstructed spectrograms
+- **Analysis**: Convergence graphs
 
 ---
 
-## 🎯 Destaques Técnicos
+## Technical Highlights
 
-✅ **Modelos Generativos**: Diffusion Models (SOTA em geração de imagens)  
-✅ **Modelos Autoencoders**: Compressão e reconstrução eficiente  
-✅ **Pré-processamento**: Mel-Spectrogram para áudio, Normalização para ambos  
-✅ **Métricas Avançadas**: FID, Cosine Similarity, PESQ Proxy  
+✅ **Generative Models**: Diffusion Models (SOTA in image generation)  
+✅ **Autoencoder Models**: Efficient compression and reconstruction  
+✅ **Preprocessing**: Mel-Spectrogram for audio, Normalization for both  
+✅ **Advanced Metrics**: FID, Cosine Similarity, PESQ Proxy  
 ✅ **Best Practices**: Checkpointing, Learning Rate Scheduling, Gradient Clipping  
-✅ **CLI Intuitiva**: Argumentos configuráveis para fácil experimentação  
-✅ **Visualização**: Gráficos comparativos e análise de qualidade  
+✅ **Intuitive CLI**: Configurable arguments for easy experimentation  
+✅ **Visualization**: Comparative graphs and quality analysis  
 
 ---
 
-## 📝 Frameworks Utilizados
+## Frameworks Used
 
-- **PyTorch**: Deep learning framework principal
-- **Torchaudio**: Processamento de áudio
-- **Torchvision**: Transformações de imagem
-- **Matplotlib**: Visualização
-- **Soundfile**: Exportação de áudio
-- **Tqdm**: Barras de progresso
+- **PyTorch**: Main deep learning framework
+- **Torchaudio**: Audio processing
+- **Torchvision**: Image transformations
+- **Matplotlib**: Visualization
+- **Soundfile**: Audio export
+- **Tqdm**: Progress bars
 
 ---
 
-## 📚 Referências
+## References
 
 - Ho et al. (2020): Denoising Diffusion Probabilistic Models (DDPM)
 - Kingma & Welling (2013): Auto-Encoding Variational Bayes
-- Mel-Frequency Cepstral Coefficients (MFCC) - Padrão em processamento de áudio
+- Mel-Frequency Cepstral Coefficients (MFCC) - Standard in audio processing
 
 ---
 
-## ✨ Próximos Passos
+## Next Steps
 
-- Implementar VAE (Variational Autoencoder) para áudio
-- Adicionar GAN para geração de imagens
-- Integração com dados MUSDB18 reais
-- API REST para inferência
-- Web interface com Streamlit
+- Implement VAE (Variational Autoencoder) for audio
+- Add GAN for image generation
+- Integration with real MUSDB18 data
+- REST API for inference
+- Web interface with Streamlit
