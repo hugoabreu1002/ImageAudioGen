@@ -64,12 +64,13 @@ ImageAudioGen/
 │   ├── train.sh            # Training script for image generation
 │   └── infer.sh            # Inference script for image generation
 ├── audio_gen/
-│   ├── data/               # MUSDB18 dataset (auto-downloaded)
+│   ├── data/               # Synthetic music dataset (auto-generated)
 │   ├── models/             # Trained model checkpoints
 │   ├── results/            # Reconstructed audio and training plots
 │   ├── audio_gen.py        # Audio regeneration with Autoencoder
 │   ├── train.sh            # Training script for audio regeneration
-│   └── infer.sh            # Inference script for audio regeneration
+│   ├── infer.sh            # Inference script for audio regeneration
+│   └── generate_synthetic.sh # Script to generate synthetic music
 ├── requirements.txt        # Dependencies for virtual environment
 ├── README.md               # This file
 └── challenge.txt           # Requirements description
@@ -166,7 +167,7 @@ models/
 ## Part 2: Audio Regeneration (`audio_gen/audio_gen.py`)
 
 ### What it does?
-Implements an **Autoencoder** to reconstruct audio stems from time-frequency domain representations (Mel-Spectrogram) using the MUSDB18 dataset.
+Implements an **Autoencoder** to reconstruct audio stems from time-frequency domain representations (Mel-Spectrogram) using synthetic music data.
 
 ### Main Components
 
@@ -179,8 +180,9 @@ Implements an **Autoencoder** to reconstruct audio stems from time-frequency dom
 - Uses **Griffin-Lim** to reconstruct audio from Mel-Spectrogram
 - Normalizes data for training
 
-#### 2. **MUSDBDataset**
-- Uses real MUSDB18 dataset for training on authentic music stems
+#### 2. **SyntheticDataset**
+- Uses synthetic music generated with harmonic compositions for training
+- Supports 3 different composition types with configurable harmonics
 - Supports fixed-size Mel-Spectrogram output (256 temporal frames)
 
 #### 3. **AudioAutoencoder** (Enhanced)
@@ -207,27 +209,12 @@ Implements an **Autoencoder** to reconstruct audio stems from time-frequency dom
 | **Cosine Similarity** | Similarity between spectra        | 0-1 (higher=better) |
 | **PESQ Proxy**        | Perceptual quality approximation  | 0-1 (higher=better) |
 
-### MUSDB18 Dataset Setup
+### Synthetic Music Dataset Setup
 
-The audio generation model requires the MUSDB18 dataset for training and inference. The training and inference scripts will automatically download and extract the dataset (~8GB) if it's not found in the expected location (`audio_gen/data/musdb18/`).
+The audio generation model uses synthetic music data generated using harmonic compositions. The training script will automatically generate the synthetic dataset if it's not found in the expected location (`audio_gen/data/synthetic/`).
 
-**Manual Setup** (optional):
-```bash
-# Navigate to audio_gen directory
-cd audio_gen
-
-# Create data directory
-mkdir -p data
-
-# Download the dataset
-cd data
-wget https://zenodo.org/record/1117372/files/musdb18.zip
-unzip musdb18.zip
-
-# Verify
-ls musdb18/
-# Should show train/ and test/ directories
-```
+**Automatic Generation** (handled by training script):
+The training script checks for synthetic data and generates it automatically using `./generate_synthetic.sh`.
 
 **Automatic Setup**: Simply run `./train.sh` or `./infer.sh` - the scripts will handle downloading if needed.
 
@@ -261,7 +248,6 @@ python audio_gen.py --mode infer \
 | `--epochs`        | int   | 30                          | Number of training epochs                  |
 | `--batch_size`    | int   | 32                          | Batch size                                 |
 | `--learning_rate` | float | 1e-3                        | Learning rate                              |
-| `--musdb_root`    | str   | data/musdb18                | Path to MUSDB18 dataset                    |
 | `--checkpoint`    | str   | models/audio_autoencoder.pt | Saved model path                           |
 | `--n_mels`        | int   | 128                         | Number of Mel bins                         |
 | `--latent_dim`    | int   | 128                         | Latent space dimension                     |
@@ -289,7 +275,7 @@ The audio autoencoder has been improved with:
 - **AdamW Optimizer**: Better generalization with weight decay
 - **Cosine Annealing**: Optimal learning rate scheduling
 - **Increased Latent Dim**: From 64 to 128 for more capacity
-- **MUSDB18 Support**: Real dataset option for authentic training
+- **Synthetic Data Support**: Automatically generated harmonic compositions for training
 - **Dropout Regularization**: Prevents overfitting
 
 These changes result in ~50-70% better reconstruction quality.
@@ -429,6 +415,6 @@ CHECKPOINT=models/my_model.pt ./infer.sh
 
 - Implement VAE (Variational Autoencoder) for audio
 - Add GAN for image generation
-- Integration with real MUSDB18 data
+- Integration with synthetic music data
 - REST API for inference
 - Web interface with Streamlit

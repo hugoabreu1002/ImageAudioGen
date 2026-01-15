@@ -4,7 +4,7 @@
 # This script trains the diffusion model for image generation
 
 # Set default values
-EPOCHS=${EPOCHS:-20}
+EPOCHS=${EPOCHS:-200}
 BATCH_SIZE=${BATCH_SIZE:-64}
 LEARNING_RATE=${LEARNING_RATE:-0.001}
 
