@@ -117,59 +117,55 @@ class AudioPreprocessor:
         return mel_spec * std + mean
 
 
-class SyntheticMUSDBDataset(Dataset):
-    """Synthetic dataset to simulate MUSDB18"""
+class MUSDBDataset(Dataset):
+    """Dataset for real MUSDB18 data"""
 
     def __init__(
         self,
-        num_samples: int = 100,
+        root: str = "data/MUSDB18",
+        subset: str = "train",
         sample_rate: int = 16000,
         duration: float = 5.0,
         preprocessor: Optional[AudioPreprocessor] = None,
     ):
-        self.num_samples = num_samples
+        try:
+            import musdb
+
+            self.mus = musdb.DB(root=root)
+            self.tracks = self.mus.load_mus_tracks(subsets=[subset])
+        except ImportError:
+            raise ImportError(
+                "musdb library not installed. Install with: pip install musdb"
+            )
+
         self.sample_rate = sample_rate
         self.duration = duration
         self.num_samples_audio = int(sample_rate * duration)
         self.preprocessor = preprocessor or AudioPreprocessor(sample_rate=sample_rate)
 
-    def generate_synthetic_audio(self, seed: int) -> torch.Tensor:
-        """Generate synthetic audio with multiple frequencies"""
-        torch.manual_seed(seed)
-        np.random.seed(seed)
-
-        t = torch.linspace(0, self.duration, self.num_samples_audio)
-
-        # Generate signals with different frequencies and amplitudes
-        freqs = torch.tensor(
-            [440, 880, 1320, 1760], dtype=torch.float32
-        )  # A, A5, E6, A6
-        amps = torch.tensor([0.3, 0.2, 0.15, 0.1], dtype=torch.float32)
-
-        audio = torch.zeros(self.num_samples_audio)
-        for freq, amp in zip(freqs, amps):
-            audio += amp * torch.sin(2 * np.pi * freq * t)
-
-        # Add some noise
-        audio += 0.05 * torch.randn_like(audio)
-
-        # Normalize
-        audio = audio / (torch.max(torch.abs(audio)) + 1e-8)
-
-        return audio
-
     def __len__(self):
-        return self.num_samples
+        return len(self.tracks)
 
     def __getitem__(self, idx: int) -> Tuple[torch.Tensor, torch.Tensor]:
-        """Return audio sample and its Mel-Spectrogram"""
-        # Generate synthetic audio
-        audio = self.generate_synthetic_audio(seed=idx)
+        """Return mixture audio and its Mel-Spectrogram"""
+        track = self.tracks[idx]
+
+        # Get mixture audio
+        audio = track.audio  # [samples, channels]
+        audio = audio[: self.num_samples_audio]  # Truncate to duration
+        if audio.shape[0] < self.num_samples_audio:
+            # Pad if too short
+            audio = np.pad(
+                audio, ((0, self.num_samples_audio - audio.shape[0]), (0, 0))
+            )
+
+        # Convert to tensor and transpose to [channels, samples]
+        audio = torch.from_numpy(audio).float().t()
 
         # Convert to Mel-Spectrogram
         mel_spec = self.preprocessor.to_mel_spectrogram(audio)
 
-        # Resize to fixed size (crop or pad)
+        # Resize to fixed size
         target_frames = 256
         if mel_spec.shape[-1] < target_frames:
             mel_spec = F.pad(mel_spec, (0, target_frames - mel_spec.shape[-1]))
@@ -183,45 +179,73 @@ class SyntheticMUSDBDataset(Dataset):
         return mel_spec, audio
 
 
+class ResidualBlock(nn.Module):
+    """Residual block for better gradient flow"""
+
+    def __init__(self, channels: int):
+        super().__init__()
+        self.conv1 = nn.Conv1d(channels, channels, kernel_size=3, padding=1)
+        self.bn1 = nn.BatchNorm1d(channels)
+        self.conv2 = nn.Conv1d(channels, channels, kernel_size=3, padding=1)
+        self.bn2 = nn.BatchNorm1d(channels)
+        self.dropout = nn.Dropout(0.1)
+
+    def forward(self, x: torch.Tensor) -> torch.Tensor:
+        residual = x
+        x = F.relu(self.bn1(self.conv1(x)))
+        x = self.dropout(x)
+        x = self.bn2(self.conv2(x))
+        return F.relu(x + residual)
+
+
 class AudioAutoencoder(nn.Module):
     """Autoencoder for audio reconstruction in Mel-Spectrogram domain"""
 
-    def __init__(self, n_mels: int = 128, latent_dim: int = 64):
+    def __init__(
+        self, n_mels: int = 128, latent_dim: int = 128
+    ):  # Increased default latent_dim
         super().__init__()
         self.n_mels = n_mels
         self.latent_dim = latent_dim
 
-        # Encoder
+        # Encoder with residual blocks
         self.encoder = nn.Sequential(
             nn.Conv1d(n_mels, 256, kernel_size=4, stride=2, padding=1),
-            nn.ReLU(),
             nn.BatchNorm1d(256),
+            nn.ReLU(),
+            ResidualBlock(256),
             nn.Conv1d(256, 128, kernel_size=4, stride=2, padding=1),
-            nn.ReLU(),
             nn.BatchNorm1d(128),
+            nn.ReLU(),
+            ResidualBlock(128),
             nn.Conv1d(128, 64, kernel_size=4, stride=2, padding=1),
-            nn.ReLU(),
             nn.BatchNorm1d(64),
-            nn.Conv1d(64, 32, kernel_size=4, stride=2, padding=1),
             nn.ReLU(),
+            ResidualBlock(64),
+            nn.Conv1d(64, 32, kernel_size=4, stride=2, padding=1),
             nn.BatchNorm1d(32),
+            nn.ReLU(),
+            ResidualBlock(32),
         )
 
         # Bottleneck
         self.fc_encode = nn.Linear(32 * 16, latent_dim)
         self.fc_decode = nn.Linear(latent_dim, 32 * 16)
 
-        # Decoder
+        # Decoder with residual blocks
         self.decoder = nn.Sequential(
             nn.ConvTranspose1d(32, 64, kernel_size=4, stride=2, padding=1),
-            nn.ReLU(),
             nn.BatchNorm1d(64),
+            nn.ReLU(),
+            ResidualBlock(64),
             nn.ConvTranspose1d(64, 128, kernel_size=4, stride=2, padding=1),
-            nn.ReLU(),
             nn.BatchNorm1d(128),
-            nn.ConvTranspose1d(128, 256, kernel_size=4, stride=2, padding=1),
             nn.ReLU(),
+            ResidualBlock(128),
+            nn.ConvTranspose1d(128, 256, kernel_size=4, stride=2, padding=1),
             nn.BatchNorm1d(256),
+            nn.ReLU(),
+            ResidualBlock(256),
             nn.ConvTranspose1d(256, n_mels, kernel_size=4, stride=2, padding=1),
             nn.Tanh(),
         )
@@ -266,9 +290,11 @@ class AudioTrainer:
         self.model = model.to(device)
         self.preprocessor = preprocessor
         self.device = device
-        self.optimizer = optim.Adam(model.parameters(), lr=learning_rate)
-        self.scheduler = optim.lr_scheduler.StepLR(
-            self.optimizer, step_size=10, gamma=0.5
+        self.optimizer = optim.AdamW(
+            model.parameters(), lr=learning_rate, weight_decay=1e-4
+        )
+        self.scheduler = optim.lr_scheduler.CosineAnnealingLR(
+            self.optimizer, T_max=50, eta_min=1e-6
         )
         self.losses = []
 
@@ -283,8 +309,15 @@ class AudioTrainer:
             # Forward pass
             reconstructed, _ = self.model(mel_specs)
 
-            # Calculate loss
-            loss = F.mse_loss(reconstructed, mel_specs)
+            # Calculate losses
+            loss_mse = F.mse_loss(reconstructed, mel_specs)
+
+            # Mel-spectrogram loss (compare in frequency domain)
+            # Convert back to mel for loss (since reconstructed is in mel space)
+            loss_mel = F.l1_loss(reconstructed, mel_specs)  # Simplified mel loss
+
+            # Combined loss
+            loss = loss_mse + 0.1 * loss_mel
 
             # Backward
             self.optimizer.zero_grad()
@@ -491,12 +524,6 @@ def main():
         "--learning_rate", type=float, default=1e-3, help="Learning rate"
     )
     parser.add_argument(
-        "--num_samples",
-        type=int,
-        default=100,
-        help="Number of synthetic dataset samples",
-    )
-    parser.add_argument(
         "--checkpoint",
         type=str,
         default="models/audio_autoencoder.pt",
@@ -509,9 +536,18 @@ def main():
         default="cuda" if torch.cuda.is_available() else "cpu",
         help="Device (cpu or cuda)",
     )
+    parser.add_argument(
+        "--musdb_root",
+        type=str,
+        default="data/MUSDB18",
+        help="Path to MUSDB18 dataset",
+    )
     parser.add_argument("--n_mels", type=int, default=128, help="Number of Mel bins")
     parser.add_argument(
-        "--latent_dim", type=int, default=64, help="Latent space dimension"
+        "--latent_dim",
+        type=int,
+        default=128,
+        help="Latent space dimension",  # Updated default
     )
 
     args = parser.parse_args()
@@ -524,8 +560,9 @@ def main():
     preprocessor = AudioPreprocessor(sample_rate=16000, n_mels=args.n_mels)
 
     # Create dataset
-    dataset = SyntheticMUSDBDataset(
-        num_samples=args.num_samples,
+    dataset = MUSDBDataset(
+        root=args.musdb_root,
+        subset="train",
         sample_rate=16000,
         duration=5.0,
         preprocessor=preprocessor,
