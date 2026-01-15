@@ -11,11 +11,7 @@ N_MELS=${N_MELS:-128}
 LATENT_DIM=${LATENT_DIM:-128}
 
 # Check for CUDA availability and set default device
-if python3 -c "import torch; print(torch.cuda.is_available())" 2>/dev/null | grep -q "True"; then
-    DEFAULT_DEVICE="cuda"
-else
-    DEFAULT_DEVICE="cpu"
-fi
+DEFAULT_DEVICE="cpu"
 DEVICE=${DEVICE:-$DEFAULT_DEVICE}
 
 # Activate virtual environment

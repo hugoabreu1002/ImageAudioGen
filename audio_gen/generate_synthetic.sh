@@ -8,11 +8,7 @@ DURATION=${DURATION:-10.0}
 HARMONICS=${HARMONICS:-5}
 
 # Check for CUDA availability and set default device
-if python3 -c "import torch; print(torch.cuda.is_available())" 2>/dev/null | grep -q "True"; then
-    DEFAULT_DEVICE="cuda"
-else
-    DEFAULT_DEVICE="cpu"
-fi
+DEFAULT_DEVICE="cpu"
 DEVICE=${DEVICE:-$DEFAULT_DEVICE}
 
 # Activate virtual environment

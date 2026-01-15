@@ -766,7 +766,7 @@ def main():
         "--device",
         type=str,
         choices=["cpu", "cuda"],
-        default="cuda" if torch.cuda.is_available() else "cpu",
+        default="cpu",
         help="Device (cpu or cuda)",
     )
     parser.add_argument("--n_mels", type=int, default=128, help="Number of Mel bins")
