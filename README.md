@@ -57,10 +57,16 @@ This project evaluates applied AI technical capabilities, demonstrating:
 ```
 ImageAudioGen/
 ├── image_gen/
+│   ├── data/               # MNIST dataset (auto-downloaded)
+│   ├── models/             # Trained model checkpoints
+│   ├── results/            # Generated images and training plots
 │   ├── image_gen.py        # Image generation with Diffusion Model
 │   ├── train.sh            # Training script for image generation
 │   └── infer.sh            # Inference script for image generation
 ├── audio_gen/
+│   ├── data/               # MUSDB18 dataset (auto-downloaded)
+│   ├── models/             # Trained model checkpoints
+│   ├── results/            # Reconstructed audio and training plots
 │   ├── audio_gen.py        # Audio regeneration with Autoencoder
 │   ├── train.sh            # Training script for audio regeneration
 │   └── infer.sh            # Inference script for audio regeneration
@@ -201,6 +207,30 @@ Implements an **Autoencoder** to reconstruct audio stems from time-frequency dom
 | **Cosine Similarity** | Similarity between spectra        | 0-1 (higher=better) |
 | **PESQ Proxy**        | Perceptual quality approximation  | 0-1 (higher=better) |
 
+### MUSDB18 Dataset Setup
+
+The audio generation model requires the MUSDB18 dataset for training and inference. The training and inference scripts will automatically download and extract the dataset (~8GB) if it's not found in the expected location (`audio_gen/data/musdb18/`).
+
+**Manual Setup** (optional):
+```bash
+# Navigate to audio_gen directory
+cd audio_gen
+
+# Create data directory
+mkdir -p data
+
+# Download the dataset
+cd data
+wget https://zenodo.org/record/1117372/files/musdb18.zip
+unzip musdb18.zip
+
+# Verify
+ls musdb18/
+# Should show train/ and test/ directories
+```
+
+**Automatic Setup**: Simply run `./train.sh` or `./infer.sh` - the scripts will handle downloading if needed.
+
 ### How to Use
 
 **Train the model:**
@@ -231,7 +261,7 @@ python audio_gen.py --mode infer \
 | `--epochs`        | int   | 30                          | Number of training epochs                  |
 | `--batch_size`    | int   | 32                          | Batch size                                 |
 | `--learning_rate` | float | 1e-3                        | Learning rate                              |
-| `--musdb_root`    | str   | data/MUSDB18                | Path to MUSDB18 dataset                    |
+| `--musdb_root`    | str   | data/musdb18                | Path to MUSDB18 dataset                    |
 | `--checkpoint`    | str   | models/audio_autoencoder.pt | Saved model path                           |
 | `--n_mels`        | int   | 128                         | Number of Mel bins                         |
 | `--latent_dim`    | int   | 128                         | Latent space dimension                     |
@@ -353,7 +383,7 @@ EPOCHS=10 BATCH_SIZE=32 ./train.sh
 
 # For audio generation inference
 cd audio_gen
-CHECKPOINT=../models/my_model.pt ./infer.sh
+CHECKPOINT=models/my_model.pt ./infer.sh
 ```
 
 ---
@@ -392,14 +422,6 @@ CHECKPOINT=../models/my_model.pt ./infer.sh
 - **Matplotlib**: Visualization
 - **Soundfile**: Audio export
 - **Tqdm**: Progress bars
-
----
-
-## References
-
-- Ho et al. (2020): Denoising Diffusion Probabilistic Models (DDPM)
-- Kingma & Welling (2013): Auto-Encoding Variational Bayes
-- Mel-Frequency Cepstral Coefficients (MFCC) - Standard in audio processing
 
 ---
 

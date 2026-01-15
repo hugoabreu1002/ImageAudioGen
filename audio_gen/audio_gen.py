@@ -122,7 +122,7 @@ class MUSDBDataset(Dataset):
 
     def __init__(
         self,
-        root: str = "data/MUSDB18",
+        root: str = "data/musdb18",
         subset: str = "train",
         sample_rate: int = 16000,
         duration: float = 5.0,
@@ -133,10 +133,20 @@ class MUSDBDataset(Dataset):
 
             self.mus = musdb.DB(root=root)
             self.tracks = self.mus.load_mus_tracks(subsets=[subset])
+
+            if len(self.tracks) == 0:
+                raise ValueError(
+                    f"No tracks found in MUSDB18 dataset at {root}. Please ensure the dataset is properly downloaded and the path is correct."
+                )
+
         except ImportError:
             raise ImportError(
                 "musdb library not installed. Install with: pip install musdb"
             )
+        except ValueError:
+            raise
+        except Exception as e:
+            raise RuntimeError(f"Failed to load MUSDB18 dataset from {root}: {str(e)}")
 
         self.sample_rate = sample_rate
         self.duration = duration
@@ -539,7 +549,7 @@ def main():
     parser.add_argument(
         "--musdb_root",
         type=str,
-        default="data/MUSDB18",
+        default="data/musdb18",
         help="Path to MUSDB18 dataset",
     )
     parser.add_argument("--n_mels", type=int, default=128, help="Number of Mel bins")

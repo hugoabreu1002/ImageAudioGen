@@ -20,7 +20,7 @@ DEVICE=${DEVICE:-$DEFAULT_DEVICE}
 source ../venv/bin/activate
 
 # Create models directory if it doesn't exist
-mkdir -p ../models
+mkdir -p models
 
 # Run training
 echo "Starting image generation training..."

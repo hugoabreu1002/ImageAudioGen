@@ -4,8 +4,8 @@
 # This script reconstructs audio using the trained autoencoder model
 
 # Set default values
-CHECKPOINT=${CHECKPOINT:-../models/audio_autoencoder.pt}
-MUSDB_ROOT=${MUSDB_ROOT:-data/MUSDB18}
+CHECKPOINT=${CHECKPOINT:-./models/audio_autoencoder.pt}
+MUSDB_ROOT=${MUSDB_ROOT:-./data/musdb18}
 
 # Check for CUDA availability and set default device
 if python3 -c "import torch; print(torch.cuda.is_available())" 2>/dev/null | grep -q "True"; then
@@ -19,7 +19,7 @@ DEVICE=${DEVICE:-$DEFAULT_DEVICE}
 source ../venv/bin/activate
 
 # Create results directory if it doesn't exist
-mkdir -p ../results
+mkdir -p ./results
 
 # Run inference
 echo "Starting audio generation inference..."

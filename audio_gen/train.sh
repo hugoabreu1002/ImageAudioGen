@@ -7,7 +7,7 @@
 EPOCHS=${EPOCHS:-30}
 BATCH_SIZE=${BATCH_SIZE:-32}
 LEARNING_RATE=${LEARNING_RATE:-0.001}
-MUSDB_ROOT=${MUSDB_ROOT:-data/MUSDB18}
+MUSDB_ROOT=${MUSDB_ROOT:-data/musdb18}
 N_MELS=${N_MELS:-128}
 LATENT_DIM=${LATENT_DIM:-128}
 
@@ -20,10 +20,31 @@ fi
 DEVICE=${DEVICE:-$DEFAULT_DEVICE}
 
 # Activate virtual environment
-source ..//venv/bin/activate
+source ../venv/bin/activate
 
 # Create models directory if it doesn't exist
-mkdir -p ../models
+mkdir -p models
+
+# Check and download MUSDB18 dataset if not present
+if [ ! -d "data/musdb18" ]; then
+    echo "MUSDB18 dataset not found. Downloading..."
+    mkdir -p data
+    cd data
+    
+    # Download MUSDB18 dataset (~8GB)
+    wget -O musdb18.zip https://zenodo.org/record/1117372/files/musdb18.zip
+    
+    # Extract the dataset
+    unzip musdb18.zip
+    
+    # Clean up zip file
+    rm musdb18.zip
+    
+    cd ..
+    echo "MUSDB18 dataset downloaded and extracted successfully."
+else
+    echo "MUSDB18 dataset found at data/musdb18"
+fi
 
 # Run training
 echo "Starting audio generation training..."
