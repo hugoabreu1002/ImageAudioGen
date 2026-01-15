@@ -4,9 +4,10 @@
 # This script trains the diffusion model for image generation
 
 # Set default values
-EPOCHS=${EPOCHS:-200}
+EPOCHS=${EPOCHS:-30}
 BATCH_SIZE=${BATCH_SIZE:-64}
 LEARNING_RATE=${LEARNING_RATE:-0.001}
+DIGIT=${DIGIT:-1}
 
 # Check for CUDA availability and set default device
 if python3 -c "import torch; print(torch.cuda.is_available())" 2>/dev/null | grep -q "True"; then
@@ -24,11 +25,12 @@ mkdir -p models
 
 # Run training
 echo "Starting image generation training..."
-echo "Epochs: $EPOCHS, Batch Size: $BATCH_SIZE, Learning Rate: $LEARNING_RATE, Device: $DEVICE"
+echo "Epochs: $EPOCHS, Batch Size: $BATCH_SIZE, Learning Rate: $LEARNING_RATE, Device: $DEVICE, Digit: $DIGIT"
 
 python image_gen.py \
     --mode train \
     --epochs $EPOCHS \
     --batch_size $BATCH_SIZE \
     --learning_rate $LEARNING_RATE \
-    --device $DEVICE
+    --device $DEVICE \
+    --digit $DIGIT

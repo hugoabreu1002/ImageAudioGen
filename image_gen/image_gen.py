@@ -320,6 +320,19 @@ class DiffusionTrainer:
         print(f"Checkpoint loaded from: {filepath}")
 
 
+class FilteredMNIST(datasets.MNIST):
+    """MNIST dataset filtered to only include specific digits"""
+
+    def __init__(self, digit: Optional[int] = None, **kwargs):
+        super().__init__(**kwargs)
+        if digit is not None:
+            # Filter the dataset to only include the specified digit
+            indices = [i for i, (_, label) in enumerate(self) if label == digit]
+            self.data = self.data[indices]
+            self.targets = self.targets[indices]
+            print(f"Filtered MNIST to {len(self)} samples of digit {digit}")
+
+
 def compute_fid(images: torch.Tensor) -> float:
     """
     Calculate FID (Fréchet Inception Distance) - simplified version
@@ -477,6 +490,13 @@ def main():
         default="cuda" if torch.cuda.is_available() else "cpu",
         help="Device (cpu or cuda)",
     )
+    parser.add_argument(
+        "--digit",
+        type=int,
+        choices=list(range(10)),
+        default=1,
+        help="Specific MNIST digit to train on (0-9). Default is 1.",
+    )
 
     args = parser.parse_args()
 
@@ -489,8 +509,8 @@ def main():
         [transforms.ToTensor(), transforms.Normalize((0.5,), (0.5,))]
     )
 
-    train_dataset = datasets.MNIST(
-        root="data", train=True, download=True, transform=transform
+    train_dataset = FilteredMNIST(
+        root="data", train=True, download=True, transform=transform, digit=args.digit
     )
     train_loader = DataLoader(train_dataset, batch_size=args.batch_size, shuffle=True)
 
